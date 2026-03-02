@@ -18,47 +18,6 @@ local UnitHealthMax = UnitHealthMax
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 
-function dump(data)
-	echo(dumpvar(data))
-end
-
-function echo(msg)
-	DEFAULT_CHAT_FRAME:AddMessage(msg)
-end
-
-function dumpvar(data)
-    -- cache of tables already printed, to avoid infinite recursive loops
-    local tablecache = {}
-    local buffer = ""
-    local padder = "    "
-
-    local function _dumpvar(d, depth)
-        local t = type(d)
-        local str = tostring(d)
-        if (t == "table") then
-            if (tablecache[str]) then
-                -- table already dumped before, so we dont
-                -- dump it again, just mention it
-                buffer = buffer.."<"..str..">\n"
-            else
-                tablecache[str] = (tablecache[str] or 0) + 1
-                buffer = buffer.."("..str..") {\n"
-                for k, v in pairs(d) do
-                    buffer = buffer..string.rep(padder, depth+1).."["..k.."] => "
-                    _dumpvar(v, depth+1)
-                end
-                buffer = buffer..string.rep(padder, depth).."}\n"
-            end
-        elseif (t == "number") then
-            buffer = buffer.."("..t..") "..str.."\n"
-        else
-            buffer = buffer.."("..t..") \""..str.."\"\n"
-        end
-    end
-    _dumpvar(data, 0)
-    return buffer
-end
-
 mod.TriggerConditions = {
 	raidTargets = {
 		STAR = "star",
@@ -269,44 +228,12 @@ function mod:StyleFilterAuraCheck(names, icons, mustHaveAll, missing, minTimeLef
 		if value == true then --only if they are turned on
 			total = total + 1 --keep track of the names
 		end
-		dump({value = value, name = name, missing = missing, mustHaveAll = mustHaveAll, minTimeLeft = minTimeLeft, maxTimeLeft = maxTimeLeft})
-		dump(icons)
 		for _, icon in ipairs(icons) do
-			if
-				icon:IsShown()
-				and (value == true)
-				and (
-					(icon.name and icon.name == name)
-					or (
-						icon.spellID
-						and icon.spellID == tonumber(name)
-					)
-				)
-				and (
-					not minTimeLeft
-					or (
-						minTimeLeft == 0
-						or (
-							icon.expirationTime
-							and (icon.expirationTime - GetTime()) > minTimeLeft
-						)
-					)
-				)
-				and (
-					not maxTimeLeft
-					or (
-						maxTimeLeft == 0
-						or (
-							icon.expirationTime
-							and (icon.expirationTime - GetTime()) < maxTimeLeft
-						)
-					)
-				)
-			then
+			if icon:IsShown() and (value == true) and ((icon.name and icon.name == name) or (icon.spellID and icon.spellID == tonumber(name)))
+				and (not minTimeLeft or (minTimeLeft == 0 or (icon.expirationTime and (icon.expirationTime - GetTime()) > minTimeLeft))) and (not maxTimeLeft or (maxTimeLeft == 0 or (icon.expirationTime and (icon.expirationTime - GetTime()) < maxTimeLeft))) then
 				count = count + 1 --keep track of how many matches we have
 			end
 		end
-		dump({count=count})
 	end
 
 	if total == 0 then
@@ -901,7 +828,7 @@ function mod:StyleFilterUpdate(frame, event)
 	end
 
 	mod:StyleFilterClear(frame)
--- dump(event);
+
 	for filterNum in ipairs(mod.StyleFilterTriggerList) do
 		local filter = E.global.nameplates.filters[mod.StyleFilterTriggerList[filterNum][1]]
 		if filter then

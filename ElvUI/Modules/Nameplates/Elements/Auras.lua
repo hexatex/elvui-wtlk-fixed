@@ -50,38 +50,26 @@ local RaidIconBit = {
 local ByRaidIcon = {}
 
 function NP:LibAuraInfo_AURA_APPLIED(event, destGUID)
-	dump('AURA_APPLIED')
-	-- dump(destGUID)
 	self:UpdateElement_AurasByGUID(destGUID, event)
 end
 
 function NP:LibAuraInfo_AURA_REMOVED(event, destGUID)
-	dump('AURA_REMOVED')
-	-- dump(destGUID)
 	self:UpdateElement_AurasByGUID(destGUID, event)
 end
 
 function NP:LibAuraInfo_AURA_REFRESH(event, destGUID)
-	dump('AURA_REFRESH')
-	-- dump(destGUID)
 	self:LibAuraInfo_AURA_APPLIED(event, destGUID)
 end
 
 function NP:LibAuraInfo_AURA_APPLIED_DOSE(event, destGUID)
-	dump('AURA_APPLIED_DOSE')
-	-- dump(destGUID)
 	self:LibAuraInfo_AURA_APPLIED(event, destGUID)
 end
 
 function NP:LibAuraInfo_AURA_CLEAR(event, destGUID)
-	dump('AURA_CLEAR')
-	-- dump(destGUID)
 	self:UpdateElement_AurasByGUID(destGUID, event)
 end
 
 function NP:LibAuraInfo_UNIT_AURA(event, destGUID)
-	dump('-UNIT_AURA-')
-	-- dump(destGUID)
 	self:UpdateElement_AurasByGUID(destGUID, event)
 end
 
@@ -163,8 +151,6 @@ function NP:SetAura(frame, guid, index, filter, isDebuff, visible)
 --					return HIDDEN
 				end
 			else
-				dump('setting to nil button')
-
 				button.timeLeft = nil
 				button.text:SetText("")
 				button:SetScript("OnUpdate", nil)
@@ -263,8 +249,10 @@ function NP:UpdateElement_AuraIcons(frame, guid, filter, limit, isDebuff)
 	visible = visible - created
 
 	for i = visible + 1, #frame do
-		dump('setting to nil b')
+		-- The following commented out line caused an issue with nameplate style filtering,
+		-- see commit 6d7ed2d in the repo 'hexatex/elvui-wtlk-fixed' more info in the commit message
 		-- frame[i].timeLeft = nil
+
 		frame[i]:SetScript("OnUpdate", nil)
 		frame[i]:Hide()
 	end
@@ -312,7 +300,7 @@ function NP:UpdateElement_Auras(frame)
 			debuffs.anchoredIcons = #debuffs
 		end
 	end
-	-- dump('sss')
+
 	self:StyleFilterUpdate(frame, "UNIT_AURA")
 end
 
@@ -339,7 +327,7 @@ function NP:UpdateElement_AurasByGUID(guid, event)
 		if frame.UnitType ~= "ENEMY_NPC" and not self.GUIDList[guid] then
 			self.GUIDList[guid] = {name = destName, unitType = frame.UnitType}
 		end
-		-- dump('wtf')
+
 		self:UpdateElement_Auras(frame)
 	end
 end
