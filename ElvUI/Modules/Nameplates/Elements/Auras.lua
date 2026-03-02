@@ -249,8 +249,9 @@ function NP:UpdateElement_AuraIcons(frame, guid, filter, limit, isDebuff)
 	visible = visible - created
 
 	for i = visible + 1, #frame do
-		-- frame[i].timeLeft = nil
-		frame[i]:SetScript("OnUpdate", nil)
+		-- The following commented out line caused an issue with nameplate style filtering,
+		-- see commit 6d7ed2d in the repo 'hexatex/elvui-wtlk-fixed' more info in the commit message		frame[i].timeLeft = nil
+		-- frame[i]:SetScript("OnUpdate", nil)
 		frame[i]:Hide()
 	end
 	return visible
@@ -297,6 +298,7 @@ function NP:UpdateElement_Auras(frame)
 			debuffs.anchoredIcons = #debuffs
 		end
 	end
+
 	self:StyleFilterUpdate(frame, "UNIT_AURA")
 end
 
@@ -323,6 +325,7 @@ function NP:UpdateElement_AurasByGUID(guid, event)
 		if frame.UnitType ~= "ENEMY_NPC" and not self.GUIDList[guid] then
 			self.GUIDList[guid] = {name = destName, unitType = frame.UnitType}
 		end
+
 		self:UpdateElement_Auras(frame)
 	end
 end
