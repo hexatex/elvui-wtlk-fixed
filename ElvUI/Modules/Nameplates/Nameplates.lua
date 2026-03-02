@@ -914,6 +914,7 @@ end
 
 function NP:SearchForFrame(guid, raidIcon, name)
 	local frame
+
 	if guid then frame = self:SearchNameplateByGUID(guid) end
 	if (not frame) and name then frame = self:SearchNameplateByName(name) end
 	if (not frame) and raidIcon then frame = self:SearchNameplateByIconName(raidIcon) end

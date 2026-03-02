@@ -18,6 +18,60 @@ local UnitHealthMax = UnitHealthMax
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 
+function dumpIcons(icons)
+	for _, icon in ipairs(icons) do
+		dump({icon = {
+			iconIsShown = icon:IsShown(),
+			timeLeft = icon.timeLeft,
+			name = icon.name,
+			spellId = icon.spellID,
+			expirationTime = icon.expirationTime,
+		}})
+	end
+end
+
+function dump(data)
+	echo(dumpvar(data))
+end
+
+function echo(msg)
+	DEFAULT_CHAT_FRAME:AddMessage(msg)
+end
+
+function dumpvar(data)
+    -- cache of tables already printed, to avoid infinite recursive loops
+    local tablecache = {}
+    local buffer = ""
+    local padder = "    "
+
+    local function _dumpvar(d, depth)
+        local t = type(d)
+        local str = tostring(d)
+        if (t == "table") then
+            if (tablecache[str]) then
+                -- table already dumped before, so we dont
+                -- dump it again, just mention it
+                buffer = buffer.."<"..str..">\n"
+            else
+                tablecache[str] = (tablecache[str] or 0) + 1
+                buffer = buffer.."("..str..") {\n"
+                for k, v in pairs(d) do
+                    buffer = buffer..string.rep(padder, depth+1).."["..k.."] => "
+                    _dumpvar(v, depth+1)
+                end
+                buffer = buffer..string.rep(padder, depth).."}\n"
+            end
+        elseif (t == "number") then
+            buffer = buffer.."("..t..") "..str.."\n"
+        else
+            buffer = buffer.."("..t..") \""..str.."\"\n"
+        end
+    end
+    _dumpvar(data, 0)
+    return buffer
+end
+
+
 mod.TriggerConditions = {
 	raidTargets = {
 		STAR = "star",
@@ -224,28 +278,56 @@ G.nameplates.totemTypes = totemTypes
 
 function mod:StyleFilterAuraCheck(names, icons, mustHaveAll, missing, minTimeLeft, maxTimeLeft)
 	local total, count = 0, 0
+
+	-- dump('check')
+
+	local debugIcons = {};
+	local debugPairs = {};
+
 	for name, value in pairs(names) do
 		if value == true then --only if they are turned on
 			total = total + 1 --keep track of the names
 		end
+
+		local seen = {} -- janky fix for this janky code. If i cast corruption and agony, then agony disapears, a bug causes the list of debuffs to have corruption twice, wich makes this filter style feature match as a false possitive.
+
 		for _, icon in ipairs(icons) do
-			-- This if statement is ridiculous, this should never have been done.
-			-- Im not cleaning it up outside of changing it from being a one liner.
+			-- dump({filter = {
+			-- 	iconIsShown = icon:IsShown(),
+			-- 	value = value,
+			-- 	name = name,
+			-- 	missing = missing,
+			-- 	mustHaveAll = mustHaveAll,
+			-- 	minTimeLeft = minTimeLeft,
+			-- 	maxTimeLeft = maxTimeLeft
+			-- }})
+
+			-- dump({icon = {
+			-- 	timeLeft = icon.timeLeft,
+			-- 	name = icon.name,
+			-- 	spellId = icon.spellID,
+			-- 	expirationTime = icon.expirationTime,
+
+			-- }})
+
 			if
+				-- icon:IsShown()
+				-- and
 				(
 					(icon.timeLeft and icon.timeLeft > 0)
-					or (icon.timeLeft == nil)
 				)
 				and (value == true)
 				and (
 					(icon.name and icon.name == name)
 					or (
-						icon.spellID and icon.spellID == tonumber(name)
+						icon.spellID
+						and icon.spellID == tonumber(name)
 					)
 				)
 				and (
 					not minTimeLeft
-					or (minTimeLeft == 0
+					or (
+						minTimeLeft == 0
 						or (
 							icon.expirationTime
 							and (icon.expirationTime - GetTime()) > minTimeLeft
@@ -263,10 +345,16 @@ function mod:StyleFilterAuraCheck(names, icons, mustHaveAll, missing, minTimeLef
 					)
 				)
 			then
-				count = count + 1 --keep track of how many matches we have
+				if icon.spellID and not seen[icon.spellID] and icon.isPlayer then
+					seen[icon.spellID] = true
+					-- dump({seen = seen, iconSpellID = icon.spellID})
+					count = count + 1 --keep track of how many matches we have
+				end
 			end
 		end
 	end
+
+	-- dump({count=count, total=total, myguid = E.myguid})
 
 	if total == 0 then
 		return nil --If no auras are checked just pass nil, we dont need to run the filter here.

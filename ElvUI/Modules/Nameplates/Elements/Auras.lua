@@ -54,7 +54,9 @@ function NP:LibAuraInfo_AURA_APPLIED(event, destGUID)
 end
 
 function NP:LibAuraInfo_AURA_REMOVED(event, destGUID)
+	-- dump('removed')
 	self:UpdateElement_AurasByGUID(destGUID, event)
+	-- self:RemoveAura(destGUID, event);
 end
 
 function NP:LibAuraInfo_AURA_REFRESH(event, destGUID)
@@ -121,8 +123,10 @@ function NP:SetAura(frame, guid, index, filter, isDebuff, visible)
 	end
 
 	if isAura then
+	
 		local position = visible + 1
 		local button = frame[position] or NP:Construct_AuraIcon(frame, position)
+
 
 		button.caster = caster
 		button.filter = filter
@@ -245,13 +249,11 @@ function NP:UpdateElement_AuraIcons(frame, guid, filter, limit, isDebuff)
 		end
 		index = index + 1
 	end
-
 	visible = visible - created
 
 	for i = visible + 1, #frame do
-		-- The following commented out line caused an issue with nameplate style filtering,
-		-- see commit 6d7ed2d in the repo 'hexatex/elvui-wtlk-fixed' more info in the commit message		frame[i].timeLeft = nil
-		-- frame[i]:SetScript("OnUpdate", nil)
+		-- frame[i].timeLeft = nil
+		frame[i]:SetScript("OnUpdate", nil)
 		frame[i]:Hide()
 	end
 	return visible
@@ -302,6 +304,67 @@ function NP:UpdateElement_Auras(frame)
 	self:StyleFilterUpdate(frame, "UNIT_AURA")
 end
 
+function NP:RemoveAura(guid, event)
+	-- dump('adf')
+	local destName, destFlags = LAI:GetGUIDInfo(guid)
+
+	if destName then
+		destName = split("-", destName)
+	end
+
+	local raidIcon
+	if destFlags then
+		for iconName, bitmask in pairs(RaidIconBit) do
+			if band(destFlags, bitmask) > 0 then
+				ByRaidIcon[iconName] = guid
+				raidIcon = iconName
+				break
+			end
+		end
+	end
+
+	local frame = self:SearchForFrame(guid, raidIcon)
+
+	local index = 1
+	local filter = 'HELPFUL'
+
+	local isAura, name, texture, count, debuffType, duration, expiration, caster, spellID, _ = LAI:GUIDAura(guid, index, filter)
+
+	if not spellID then
+		filter = 'HARMFUL'
+		isAura, name, texture, count, debuffType, duration, expiration, caster, spellID, _ = LAI:GUIDAura(guid, index, filter)
+	end
+
+	local auras = (filter == 'HELPFUL') and frame.Buffs or frame.Debuffs
+
+	local idToRemove = nil;
+	for _, auraIcon in ipairs(auras) do
+		if auraIcon.spellID == spellID then
+			idToRemove = _;
+		end
+	end
+
+	if idToRemove ~= nill then
+		auras[idToRemove] = nil
+	end
+
+	-- dump('pppppppppp')
+	-- dumpIcons(frame.Debuffs)
+
+	-- dump({
+	-- 	isAura=isAura,
+	-- 	name=name,
+	-- 	texture=texture,
+	-- 	count=count,
+	-- 	debuffType=debuffType,
+	-- 	duration=duration,
+	-- 	expiration=expiration,
+	-- 	caster=caster,
+	-- 	spellID=spellID,
+	-- 	_=_
+	-- });
+end
+
 function NP:UpdateElement_AurasByGUID(guid, event)
 	local destName, destFlags = LAI:GetGUIDInfo(guid)
 
@@ -321,13 +384,19 @@ function NP:UpdateElement_AurasByGUID(guid, event)
 	end
 
 	local frame = self:SearchForFrame(guid, raidIcon)
+	-- dump('aaa')
+	-- dumpIcons(frame.Debuffs)
+	-- dump('bbb')
+
 	if frame then
 		if frame.UnitType ~= "ENEMY_NPC" and not self.GUIDList[guid] then
 			self.GUIDList[guid] = {name = destName, unitType = frame.UnitType}
 		end
-
 		self:UpdateElement_Auras(frame)
 	end
+	-- dump('aaa2')
+	-- dumpIcons(frame.Debuffs)
+	-- dump('bbb2')
 end
 
 function NP:Construct_AuraIcon(parent, index)
@@ -431,35 +500,54 @@ end
 
 function NP:AuraFilter(guid, button, name, texture, count, debuffType, duration, expiration, caster, spellID)
 	local parent = button:GetParent()
+
 	local parentType = parent.type
 	local db = NP.db.units[parent:GetParent().UnitType][parentType]
+
 	if not db then return true end
 
 	local isPlayer = caster == E.myguid
-
 	-- keep these same as in `UF:AuraFilter`
 	button.isPlayer = isPlayer
 	button.dtype = debuffType
 	button.duration = duration
+
+
 	button.expiration = expiration
 	button.stackCount = count
-	button.name = name
+
+	-- dump('aaa1')
+	-- dumpIcons(parent)
+	-- dump('bbb1')
+
+	button.name = name --This line adds the dupp icon
+	-- dump('aaa2')
+	-- dumpIcons(parent)
+	-- dump('bbb2')
 	button.spellID = spellID
+	-- dump('aaa3')
+	-- dumpIcons(parent)
+	-- dump('bbb3')
+
 	button.spell = name
 	button.priority = 0
-
 	if not db.filters then return true end
+
 
 	local priority = db.filters.priority
 	local noDuration = (not duration or duration == 0)
 	local allowDuration = noDuration or (duration and (duration > 0) and db.filters.maxDuration == 0 or duration <= db.filters.maxDuration) and (db.filters.minDuration == 0 or duration >= db.filters.minDuration)
 	local filterCheck
 
+
 	if priority ~= "" then
 		filterCheck = NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, split(",", priority))
 	else
 		filterCheck = allowDuration and true -- Allow all auras to be shown when the filter list is empty, while obeying duration sliders
 	end
+	-- dump('aaa4')
+	-- dumpIcons(parent)
+	-- dump('bbb4')
 
 	return filterCheck
 end
