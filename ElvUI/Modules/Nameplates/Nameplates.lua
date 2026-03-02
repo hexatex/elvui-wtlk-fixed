@@ -414,6 +414,7 @@ function NP:OnHide(isConfig, dontHideHighlight)
 
 	for i = 1, #frame.Debuffs do
 		frame.Debuffs[i]:SetScript("OnUpdate", nil)
+		dump('setting to nil a')
 		frame.Debuffs[i].timeLeft = nil
 		frame.Debuffs[i]:Hide()
 	end
@@ -519,6 +520,7 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 		self:Update_Health(frame)
 		self:Update_HealthColor(frame)
 		self:Update_CastBar(frame, nil, frame.unit)
+		-- dump('health');
 		NP:UpdateElement_Auras(frame)
 	end
 
@@ -725,7 +727,7 @@ function NP:SetTargetFrame(frame)
 
 				self:RegisterEvents(frame)
 			end
-
+			-- dump('setTargetFrame');
 			self:UpdateElement_Auras(frame)
 
 			if not self.db.units[frame.UnitType].health.enable and self.db.alwaysShowTargetHealth then
@@ -819,6 +821,7 @@ function NP:SetMouseoverFrame(frame)
 
 				self:Update_CastBar(frame, nil, frame.unit)
 			end
+		-- dump('SetMouseoverFrame');
 
 			self:UpdateElement_Auras(frame)
 		end
@@ -914,6 +917,13 @@ end
 
 function NP:SearchForFrame(guid, raidIcon, name)
 	local frame
+	dump(raidIcon)
+	dump(name)
+	dump({
+		guid = guid,
+		raidIcon = raidIcon,
+		name = name
+	})
 	if guid then frame = self:SearchNameplateByGUID(guid) end
 	if (not frame) and name then frame = self:SearchNameplateByName(name) end
 	if (not frame) and raidIcon then frame = self:SearchNameplateByIconName(raidIcon) end
